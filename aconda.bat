@@ -1,0 +1,1 @@
+%conda%\conda-env\Scripts\activate.bat
