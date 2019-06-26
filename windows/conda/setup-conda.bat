@@ -1,6 +1,6 @@
-call pip install virtualenv
+call pip install --user virtualenv
 mkdir %conda%
 copy .\* %conda%\
-call virtualenv %conda%/conda-env
+call python -m virtualenv %conda%/conda-env
 call %conda%\aconda.bat
 pip install -r environment.txt
