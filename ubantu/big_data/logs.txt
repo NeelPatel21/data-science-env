@@ -1,0 +1,10 @@
+Formatting using clusterid: CID-1bd468e0-e458-40ff-b8f6-3b398f635d39
+This script is Deprecated. Instead use start-dfs.sh and start-yarn.sh
+Starting namenodes on [localhost]
+localhost: starting namenode, logging to /home/neelpatel/Documents/bigdata/hadoop/hadoop-2.9.2/logs/hadoop-neelpatel-namenode-ubuntu.out
+localhost: starting datanode, logging to /home/neelpatel/Documents/bigdata/hadoop/hadoop-2.9.2/logs/hadoop-neelpatel-datanode-ubuntu.out
+Starting secondary namenodes [0.0.0.0]
+0.0.0.0: starting secondarynamenode, logging to /home/neelpatel/Documents/bigdata/hadoop/hadoop-2.9.2/logs/hadoop-neelpatel-secondarynamenode-ubuntu.out
+starting yarn daemons
+starting resourcemanager, logging to /home/neelpatel/Documents/bigdata/hadoop/hadoop-2.9.2/logs/yarn-neelpatel-resourcemanager-ubuntu.out
+localhost: starting nodemanager, logging to /home/neelpatel/Documents/bigdata/hadoop/hadoop-2.9.2/logs/yarn-neelpatel-nodemanager-ubuntu.out
