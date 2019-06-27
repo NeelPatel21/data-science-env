@@ -23,12 +23,12 @@
     </property>
     <property>
         <name>dfs.namenode.name.dir</name>
-        <value>/home/neelpatel/Documents/bigdata/hadoop/hdfs/namenode</value>
+        <value>{HADOOP_STORAGE}/namenode</value>
     </property>
 
     <property>
         <name>dfs.datanode.data.dir</name>
-        <value>/home/neelpatel/Documents/bigdata/hadoop/hdfs/datanode</value>
+        <value>{HADOOP_STORAGE}/datanode</value>
     </property>
 </configuration>
 

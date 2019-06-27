@@ -1,7 +1,9 @@
 function updateBashrc(){
 	export x="$1"
+	echo "INFO: Updating bashrc, adding $1=\"${!x}\""
 	echo "export $1=\"${!x}\"" >> $HOME/.bashrc
 }
+
 function setupJava(){
 	if ! javac -version &>>/dev/null; then
 		echo "INFO: Java not found."
@@ -54,28 +56,66 @@ function downloadSpark(){
 	mkdir -p "$1/spark/"
 	wget -P "$1/spark/" "http://mirrors.estointernet.in/apache/spark/spark-2.4.3/spark-2.4.3-bin-hadoop2.7.tgz"
 	echo "INFO: Spark downloaded"
-	tar -xvzf "$1/spark/spark-2.4.3-bin-hadoop2.7.tgz"  -C "$1/spark/" && echo "INFO: spark extracted successfully."
+	tar -xzf "$1/spark/spark-2.4.3-bin-hadoop2.7.tgz"  -C "$1/spark/" && echo "INFO: spark extracted successfully."
 	export SPARK_HOME="$1/spark/spark-2.4.3-bin-hadoop2.7"
 	updateBashrc SPARK_HOME
 }
 
 function downloadHadoop(){
 	echo "INFO: Installing Hadoop."
-	#read -s “Specify hadoop home (directory will be created if not exist): ” var
 	mkdir -p "$1/hadoop/"
-	#wget  -P "$1/hadoop/" "http://mirrors.estointernet.in/apache/hadoop/common/hadoop-2.9.2/hadoop-2.9.2.tar.gz"
-	echo "INFO: Hadoop downloaded."  
-	tar -xvzf "$1/hadoop/hadoop-2.9.2.tar.gz" -C "$1/hadoop/" && echo "INFO: hadoop extracted successfully."
+	if [ -f $1/hadoop/hadoop-2.9.2.tar.gz ]; then
+		echo "INFO: Hadoop binary tar exist, using existing tar"
+	else
+		echo "INFO: Downloading Hadoop 2.9.2"
+		if wget -P "$1/hadoop/" "http://mirrors.estointernet.in/apache/hadoop/common/hadoop-2.9.2/hadoop-2.9.2.tar.gz"; then
+			echo "INFO: Hadoop downloaded." 
+		else
+			echo "ERROR: Error while Downloading Hadoop."
+			return 0
+		fi
+	fi
+	echo "INFO: Extracting Hadoop."
+	if tar -xzf "$1/hadoop/hadoop-2.9.2.tar.gz" -C "$1/hadoop/" &>> logs.txt; then
+		echo "INFO: hadoop extracted successfully."
+	else
+		echo "ERROR: Error while Extracting Hadoop."
+	fi
 	export HADOOP_HOME="$1/hadoop/hadoop-2.9.2"
-	updateBashrc HADOOP_HOME
 }
 
 function psudoDistributedHadoop(){
+	if ! downloadHadoop $root_path; then
+		echo "ERROR: Hadoop download failed"
+		return 0
+	fi
+	
+	updateBashrc HADOOP_HOME
+
 	echo "INFO: Configuring Hadoop in psudo-distributed mode."
-	echo "$HADOOP_HOME $JAVA_HOME"
-	python3 ./hadoop/psudo_distributed/psudo_distributed.py "$script_root" "$HADOOP_HOME" "$JAVA_HOME"
-	eval "$HADOOP_HOME/bin/hdfs namenode -format" >> logs.txt
-	eval "$HADOOP_HOME/sbin/start-all.sh" >> logs.txt
+	# check if environment variables configured
+	export HADOOP_STORAGE="$1/hadoop/hdfs"
+	export MODULE_PATH="$SCRIPT_ROOT"
+	if python3 ./hadoop/psudo_distributed/psudo_distributed.py &>> logs.txt; then
+		echo "INFO: Hadoop in psudo-distributed mode configured."
+	else
+		echo "ERROR: Error while configuring Hadoop in psudo-distributed mode."
+		return 0
+	fi
+
+	echo "INFO: Formating name node."
+	if eval "$HADOOP_HOME/bin/hdfs namenode -format" &>> logs.txt; then
+		echo "INFO: Name node formated."
+	else
+		echo "ERROR: Error while formating name node."
+		return 0
+	fi
+	
+	echo "INFO: starting all processes."
+	if ! eval "$HADOOP_HOME/sbin/start-all.sh" &>> logs.txt; then
+		echo "ERROR: Error while staring all hadoop processed."
+		return 0
+	fi
 	echo "INFO: checking java processes"
 	jps
 }
@@ -93,11 +133,16 @@ function setupEnvironment(){
 }
 
 function setupHadoopSpark(){
-	echo “Specify directory for hadoop and spark \(directory will be created if not exist\): ”
+	root_path="$HOME/bigdata"
+	echo "PROMPT: Do you want to continue with default path ($root_path) for hadoop & spark: (y or n)"
 	read var
+	#echo "--$var--"
+	if [[ $var != "y" ]]; then
+		echo Specify directory for hadoop and spark \(directory will be created if not exist.\): 
+		read root_path
+	fi
 	if [[ $1 == "all" ]] || [[ $1 == "hadoop" ]]; then
-		downloadHadoop $var || echo "ERROR: Hadoop download failed"
-		psudoDistributedHadoop
+		psudoDistributedHadoop $root_path
 	fi
 	if [[ $1 == "all" ]] || [[ $1 == "spark" ]]; then
 		downloadSpark $var || echo "ERROR: Spark download failed"
@@ -106,7 +151,7 @@ function setupHadoopSpark(){
 }
 
 function exportPath(){
-	export script_root=$(pwd)
+	export SCRIPT_ROOT=$(pwd)
 }
 
 function start(){
