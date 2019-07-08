@@ -1,7 +1,14 @@
 function updateBashrc(){
 	export x="$1"
-	echo "INFO: Updating bashrc, adding $1=\"${!x}\""
-	echo "export $1=\"${!x}\"" >> $HOME/.bashrc
+	if eval "grep \"^export $x=.*$\" $HOME/.bashrc" > /dev/null; then
+		echo "INFO: Updating bashrc, updating $1=\"${!x}\""
+		#echo "sed -i 's/^export $x=.*\$/export $1=\"${!x//\//\\\/}\"/' $HOME/.bashrc"
+		eval "sed -i 's/^export $x=.*\$/export $1=\"${!x//\//\\\/}\"/' $HOME/.bashrc"
+	else
+	    # code if not found
+	    echo "INFO: Inserting into bashrc, adding $1=\"${!x}\""
+		echo "export $1=\"${!x}\"" >> $HOME/.bashrc
+	fi
 }
 
 function setupJava(){
@@ -9,11 +16,11 @@ function setupJava(){
 		echo "INFO: Java not found."
 		echo "INFO: Installing Java 8"
 		sudo apt install -y openjdk-8-jdk-headless >> logs.txt
-		updateBashrc JAVA_HOME
 	else
 		echo "INFO: Java 8 is already installed"
 	fi
 	export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"	
+	updateBashrc JAVA_HOME
 }
 
 function setupSsh(){
@@ -82,6 +89,7 @@ function downloadHadoop(){
 		echo "ERROR: Error while Extracting Hadoop."
 	fi
 	export HADOOP_HOME="$1/hadoop/hadoop-2.9.2"
+	updateBashrc HADOOP_HOME
 }
 
 function psudoDistributedHadoop(){
@@ -90,8 +98,6 @@ function psudoDistributedHadoop(){
 		return 0
 	fi
 	
-	updateBashrc HADOOP_HOME
-
 	echo "INFO: Configuring Hadoop in psudo-distributed mode."
 	# check if environment variables configured
 	export HADOOP_STORAGE="$1/hadoop/hdfs"
@@ -102,6 +108,56 @@ function psudoDistributedHadoop(){
 		echo "ERROR: Error while configuring Hadoop in psudo-distributed mode."
 		return 0
 	fi
+
+	echo "INFO: Formating name node."
+	if eval "$HADOOP_HOME/bin/hdfs namenode -format" &>> logs.txt; then
+		echo "INFO: Name node formated."
+	else
+		echo "ERROR: Error while formating name node."
+		return 0
+	fi
+	
+	echo "INFO: starting all processes."
+	if ! eval "$HADOOP_HOME/sbin/start-all.sh" &>> logs.txt; then
+		echo "ERROR: Error while staring all hadoop processed."
+		return 0
+	fi
+	echo "INFO: checking java processes"
+	jps
+}
+
+function distributedHadoop(){
+	setupEnvironment java
+	if ! downloadHadoop $root_path; then
+		echo "ERROR: Hadoop download failed"
+		return 0
+	fi
+	
+	#updateBashrc HADOOP_HOME
+
+	echo "PROMPT: Enter coma separated host names of slaves."
+	read slaves
+
+	export HADOOP_SLAVE=$slaves
+
+	echo "INFO: Configuring Hadoop in distributed mode."
+	# check if environment variables configured
+	export HADOOP_STORAGE="$1/hadoop/hdfs"
+	export MODULE_PATH="$SCRIPT_ROOT"
+	if python3 ./hadoop/distributed/distributed.py &>> logs.txt; then
+		echo "INFO: Hadoop master in distributed mode configured."
+		#return 1
+	else
+		echo "ERROR: Error while configuring Hadoop in psudo-distributed mode."
+		return 0
+	fi
+
+	while read p; do
+		echo "INFO: Slave $p is configuring"
+		eval "ssh $p 'mkdir -p $HADOOP_HOME'"
+		echo "check1"
+  		scp -r $HADOOP_HOME/* $p:$HADOOP_HOME >> logs.txt && echo "INFO: Slave $p Configured."
+	done <$HADOOP_HOME/etc/hadoop/slaves
 
 	echo "INFO: Formating name node."
 	if eval "$HADOOP_HOME/bin/hdfs namenode -format" &>> logs.txt; then
@@ -144,6 +200,9 @@ function setupHadoopSpark(){
 	if [[ $1 == "all" ]] || [[ $1 == "hadoop" ]]; then
 		psudoDistributedHadoop $root_path
 	fi
+	if [[ $1 == "all" ]] || [[ $1 == "hadoop-cluster" ]]; then
+		distributedHadoop $root_path
+	fi
 	if [[ $1 == "all" ]] || [[ $1 == "spark" ]]; then
 		downloadSpark $var || echo "ERROR: Spark download failed"
 	fi
@@ -169,7 +228,7 @@ function start(){
 	done
 	
 	for i in "$@"; do
-  		if [[ $i == "hadoop" ]] || [[ $i == "spark" ]]; then
+  		if [[ $i == "hadoop" ]] || [[ $i == "hadoop-cluster" ]] || [[ $i == "spark" ]]; then
   			setupHadoopSpark $i
   		fi
 	done

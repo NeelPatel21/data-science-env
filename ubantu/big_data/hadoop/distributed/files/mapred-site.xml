@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
 <!--
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,20 +15,9 @@
 -->
 
 <!-- Put site-specific property overrides in this file. -->
-
 <configuration>
     <property>
-        <name>dfs.replication</name>
-        <value>1</value>
-    </property>
-    <property>
-        <name>dfs.namenode.name.dir</name>
-        <value>{HADOOP_STORAGE}/namenode</value>
-    </property>
-
-    <property>
-        <name>dfs.datanode.data.dir</name>
-        <value>{HADOOP_STORAGE}/datanode</value>
+        <name>mapreduce.framework.name</name>
+        <value>yarn</value>
     </property>
 </configuration>
-

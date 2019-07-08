@@ -18,17 +18,11 @@
 
 <configuration>
     <property>
-        <name>dfs.replication</name>
-        <value>1</value>
+        <name>fs.defaultFS</name>
+        <value>hdfs://master:9000</value>
     </property>
     <property>
-        <name>dfs.namenode.name.dir</name>
-        <value>{HADOOP_STORAGE}/namenode</value>
-    </property>
-
-    <property>
-        <name>dfs.datanode.data.dir</name>
-        <value>{HADOOP_STORAGE}/datanode</value>
+        <name>hadoop.tmp.dir</name>
+        <value>{HADOOP_STORAGE}/secondarynamenode</value>
     </property>
 </configuration>
-
