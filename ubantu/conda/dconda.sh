@@ -1,1 +1,0 @@
-source $conda/conda-env/bin/deactivate
