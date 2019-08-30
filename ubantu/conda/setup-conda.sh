@@ -2,7 +2,7 @@
 function setupPip(){
 	if ! pip3 --version &>>/dev/null; then
 		echo "INFO: pip3 not found. installing pip3..."
-		if sudo apt install python3-pip &>> logs.txt; then
+		if sudo apt install -y python3-pip &>> logs.txt; then
 			echo "INFO: pip3 installed."
 			return 1
 		else
@@ -23,7 +23,7 @@ function createConfig(){
 
 	echo "#!/bin/bash" > $2/conda-env
 	echo "export conda=\"$1\"" >> $2/conda-env
-	echo "alias aconda=\"source $conda/conda-env/bin/activate\"" >> $2/conda-env
+	echo "alias aconda=\"source \$conda/conda-env/bin/activate\"" >> $2/conda-env
 	echo "alias slab=\"aconda && python3 -m jupyter lab\"" >> $2/conda-env
 	echo "INFO: environment file created."
 }
@@ -36,6 +36,7 @@ function updateBashrc(){
 		return 1
 	else
 	    echo "INFO: Inserting \"source $config_path\" into bashrc."
+		echo "# Conda Environment Configuration." >> $HOME/.bashrc
 		echo "source $config_path" >> $HOME/.bashrc
 		return 1
 	fi
